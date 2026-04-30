@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ll1ance</title>
+  <style>
+    :root {
+      --bg: #090b0f;
+      --panel: rgba(13, 16, 22, 0.92);
+      --panel2: rgba(0, 0, 0, 0.26);
+      --border: rgba(255, 255, 255, 0.11);
+      --muted: #7b8494;
+      --text: #e6edf3;
+      --cyan: #67e8f9;
+      --cyan2: #22d3ee;
+      --green: #4ade80;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-monospace, "JetBrains Mono", "Cascadia Code", "Fira Code", "SFMono-Regular", Consolas, monospace;
+    }
+
+    body {
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 18% 18%, rgba(34, 211, 238, 0.14), transparent 30%),
+        radial-gradient(circle at 82% 8%, rgba(168, 85, 247, 0.12), transparent 28%),
+        linear-gradient(120deg, rgba(255,255,255,0.04), transparent 55%);
+      animation: bgFloat 12s ease-in-out infinite alternate;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.045;
+      background-image:
+        linear-gradient(to right, #fff 1px, transparent 1px),
+        linear-gradient(to bottom, #fff 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(circle at center, black, transparent 78%);
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 34px 16px;
+    }
+
+    .wrap {
+      width: min(1120px, 100%);
+      animation: appear 520ms ease both;
+    }
+
+    @keyframes appear {
+      from { opacity: 0; transform: translateY(14px) scale(0.99); filter: blur(8px); }
+      to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+
+    @keyframes bgFloat {
+      from { transform: translate3d(-12px, -8px, 0) scale(1); }
+      to { transform: translate3d(14px, 10px, 0) scale(1.04); }
+    }
+
+    @keyframes softIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes blink {
+      0%, 48% { opacity: 1; }
+      49%, 100% { opacity: 0; }
+    }
+
+    @keyframes glowPulse {
+      0%, 100% { box-shadow: 0 0 0 rgba(34, 211, 238, 0); }
+      50% { box-shadow: 0 0 28px rgba(34, 211, 238, 0.08); }
+    }
+
+    .window {
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      background: var(--panel);
+      box-shadow: 0 30px 90px rgba(0,0,0,0.48);
+      backdrop-filter: blur(18px);
+      animation: glowPulse 5.5s ease-in-out infinite;
+    }
+
+    .topbar {
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.035);
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      white-space: nowrap;
+    }
+
+    .term-icon {
+      width: 16px;
+      height: 16px;
+      color: var(--cyan);
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      color: #8d96a8;
+      font-size: 16px;
+      user-select: none;
+    }
+
+    .content {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      padding: 24px;
+    }
+
+    .left, .right {
+      min-width: 0;
+      width: 100%;
+    }
+
+    .prompt {
+      margin: 0 0 18px;
+      font-size: 15px;
+      line-height: 1.45;
+      animation: softIn 520ms ease both;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 8px;
+      height: 1.05em;
+      margin-left: 4px;
+      vertical-align: -0.16em;
+      background: #dbeafe;
+      animation: blink 1s steps(1) infinite;
+    }
+
+    .user { color: var(--green); }
+    .host { color: var(--cyan2); }
+    .dim { color: #8b95a7; }
+    .cmd { color: #f8fafc; }
+
+    .fetch {
+      display: grid;
+      grid-template-columns: minmax(220px, 0.9fr) minmax(300px, 1.1fr);
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .ascii, .specs, .file-view {
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px;
+      background: var(--panel2);
+    }
+
+    .ascii, .specs, .file-view, button.file {
+      transition: border-color 180ms ease, background 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+    }
+
+    .ascii:hover, .specs:hover, .file-view:hover {
+      border-color: rgba(103, 232, 249, 0.18);
+      box-shadow: 0 0 32px rgba(34, 211, 238, 0.045);
+    }
+
+    .ascii {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      min-height: 232px;
+      overflow: hidden;
+      animation: softIn 560ms ease 80ms both;
+    }
+
+    .ascii pre {
+      margin: 0;
+      color: rgba(103, 232, 249, 0.94);
+      font-size: 11px;
+      line-height: 1.15;
+      user-select: none;
+      text-shadow: 0 0 18px rgba(34, 211, 238, 0.18);
+    }
+
+    .specs {
+      padding: 18px;
+      font-size: 14px;
+      line-height: 1.68;
+      animation: softIn 560ms ease 150ms both;
+    }
+
+    .specs h1 {
+      margin: 0 0 3px;
+      font-size: 20px;
+      color: var(--cyan);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    .dash {
+      color: #64748b;
+      margin-bottom: 10px;
+    }
+
+    .key { color: var(--cyan2); }
+    .value { color: #e2e8f0; }
+
+    .palette {
+      display: flex;
+      gap: 3px;
+      margin-top: 14px;
+    }
+
+    .swatch {
+      width: 31px;
+      height: 18px;
+      display: inline-block;
+      transform-origin: bottom;
+      animation: softIn 420ms ease both;
+    }
+
+    .swatch:nth-child(1) { animation-delay: 220ms; }
+    .swatch:nth-child(2) { animation-delay: 250ms; }
+    .swatch:nth-child(3) { animation-delay: 280ms; }
+    .swatch:nth-child(4) { animation-delay: 310ms; }
+    .swatch:nth-child(5) { animation-delay: 340ms; }
+    .swatch:nth-child(6) { animation-delay: 370ms; }
+    .swatch:nth-child(7) { animation-delay: 400ms; }
+    .swatch:nth-child(8) { animation-delay: 430ms; }
+
+    .files-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+      animation: softIn 560ms ease 230ms both;
+    }
+
+    .files {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    button.file {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.035);
+      color: #cbd5e1;
+      padding: 12px 14px;
+      border-radius: 14px;
+      font: inherit;
+      font-size: 14px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    button.file::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(103, 232, 249, 0.16), transparent 36%);
+      opacity: 0;
+      transition: opacity 180ms ease;
+    }
+
+    button.file:hover {
+      border-color: rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.06);
+      transform: translateY(-1px);
+    }
+
+    button.file:hover::after {
+      opacity: 1;
+    }
+
+    button.file.active {
+      border-color: rgba(103, 232, 249, 0.52);
+      background: rgba(34, 211, 238, 0.1);
+      color: #cffafe;
+      box-shadow: 0 0 22px rgba(34, 211, 238, 0.08);
+    }
+
+    .right {
+      min-height: 250px;
+    }
+
+    .file-view {
+      min-height: 250px;
+      padding: 16px;
+      animation: softIn 560ms ease 300ms both;
+    }
+
+    .file-view.switching {
+      animation: none;
+    }
+
+    .file-content {
+      animation: fileSwap 220ms ease both;
+    }
+
+    @keyframes fileSwap {
+      from { opacity: 0; transform: translateY(8px); filter: blur(4px); }
+      to { opacity: 1; transform: translateY(0); filter: blur(0); }
+    }
+
+    .file-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding-bottom: 13px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      color: var(--cyan);
+      font-size: 15px;
+    }
+
+    .close {
+      border: 0;
+      background: transparent;
+      color: #7b8494;
+      font: inherit;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .close:hover { color: #e2e8f0; }
+
+    #fileText {
+      margin: 0;
+      white-space: pre-wrap;
+      color: #dce5ef;
+      font-size: 15px;
+      line-height: 1.75;
+    }
+
+    .empty {
+      min-height: 210px;
+      display: grid;
+      place-items: center;
+      color: #6b7280;
+      font-size: 14px;
+      animation: fileSwap 220ms ease both;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: flex-start;
+      gap: 12px;
+      margin-top: 16px;
+      color: #788292;
+      font-size: 14px;
+      animation: softIn 520ms ease 380ms both;
+    }
+
+    @media (max-width: 860px) {
+      .content {
+        padding: 18px;
+      }
+
+      .fetch {
+        grid-template-columns: 1fr;
+      }
+
+      .ascii {
+        min-height: 190px;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .topbar {
+        font-size: 12px;
+        padding: 0 12px;
+      }
+
+      .controls {
+        gap: 8px;
+      }
+
+      .content {
+        padding: 14px;
+      }
+
+      .prompt, .specs, #fileText {
+        font-size: 13px;
+      }
+
+      .ascii pre {
+        font-size: 10px;
+      }
+
+      .footer {
+        flex-direction: column;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 1ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="wrap">
+      <section class="window">
+        <div class="topbar">
+          <div class="title">
+            <svg class="term-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 17l5-5-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M12 19h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+            <span>ll1ance — Konsole</span>
+          </div>
+          <div class="controls" aria-hidden="true">
+            <span>−</span><span>□</span><span>×</span>
+          </div>
+        </div>
+
+        <div class="content">
+          <div class="left">
+            <p class="prompt">
+              <span class="user">ll1ance</span><span class="dim">@</span><span class="host">fedora</span><span class="dim">:~$ </span><span class="cmd">fastfetch</span>
+            </p>
+
+            <div class="fetch">
+              <div class="ascii">
+<pre>        __        ___                         
+       / /  __   <  /  ____ _____  _____ ___ 
+      / /  / /   / /  / __ `/ __ \/ ___/ _ \
+     / /__/ /___/ /  / /_/ / / / / /__/  __/
+    /____/____/_/   \__,_/_/ /_/\___/\___/ 
+                                             
+        ┌─ system online ─────────────┐      
+        │ fedora / kde plasma / x11   │      
+        │ AAXAXAXAXAXAXAXXAAXAXAXAX   | 
+        └─────────────────────────────┘      </pre>
+              </div>
+
+              <div class="specs">
+                <h1>ll1ance@fedora</h1>
+                <div class="dash">---------------</div>
+                <div><span class="key">OS:</span> <span class="value">Fedora Linux 43</span></div>
+                <div><span class="key">DE:</span> <span class="value">KDE Plasma</span></div>
+                <div><span class="key">WM:</span> <span class="value">KWin (X11)</span></div>
+                <div><span class="key">Shell:</span> <span class="value">bash</span></div>
+                <div><span class="key">Terminal:</span> <span class="value">konsole</span></div>
+                <div><span class="key">Status:</span> <span class="value">online</span></div>
+                <div><span class="key">Bio:</span> <span class="value">not installed</span></div>
+                <div><span class="key">Updated:</span> <span class="value" id="date"></span></div>
+
+                <div class="palette" aria-hidden="true">
+                  <span class="swatch" style="background:#334155"></span>
+                  <span class="swatch" style="background:#fb7185"></span>
+                  <span class="swatch" style="background:#4ade80"></span>
+                  <span class="swatch" style="background:#facc15"></span>
+                  <span class="swatch" style="background:#38bdf8"></span>
+                  <span class="swatch" style="background:#c084fc"></span>
+                  <span class="swatch" style="background:#67e8f9"></span>
+                  <span class="swatch" style="background:#e2e8f0"></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="files-row">
+              <p class="prompt" style="margin: 0;">
+                <span class="user">ll1ance</span><span class="dim">@</span><span class="host">fedora</span><span class="dim">:~$ </span><span class="cmd">ls /home/ll1ance</span><span class="cursor" aria-hidden="true"></span>
+              </p>
+
+              <div class="files">
+                <button class="file active" data-file="about.txt">▸ about.txt</button>
+                <button class="file" data-file="setup.conf">▸ setup.conf</button>
+                <button class="file" data-file="links.md">▸ links.md</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="right">
+            <div class="file-view" id="fileView">
+              <div class="file-head">
+                <span id="fileTitle">about.txt</span>
+                <button class="close" id="closeBtn" aria-label="Закрыть файл">×</button>
+              </div>
+              <pre id="fileText"></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="footer">
+        <span>personal page / still configuring</span>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const files = {
+      "about.txt": [
+        "ll1ance",
+        "",
+        "bio: not configured",
+        "status: online sometimes",
+        "notes: nothing public"
+      ].join("\n"),
+
+      "setup.conf": [
+        "os=Fedora Linux 43",
+        "de=KDE Plasma",
+        "wm=KWin (X11)",
+        "shell=bash",
+        "terminal=konsole",
+        "font=JetBrains Mono / monospace"
+      ].join("\n"),
+
+      "links.md": [
+        "# links",
+        "",
+        "telegram: @ll1ance",
+        "github: https://github.com/ll1anc3dev"
+      ].join("\n")
+    };
+
+    const buttons = document.querySelectorAll(".file");
+    const fileView = document.getElementById("fileView");
+
+    function escapeHtml(text) {
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function openFile(name) {
+      fileView.classList.add("switching");
+
+      window.setTimeout(() => {
+        fileView.innerHTML = `
+          <div class="file-content">
+            <div class="file-head">
+              <span>${escapeHtml(name)}</span>
+              <button class="close" id="closeBtn" aria-label="Закрыть файл">×</button>
+            </div>
+            <pre id="fileText">${escapeHtml(files[name])}</pre>
+          </div>
+        `;
+
+        document.getElementById("closeBtn").addEventListener("click", closeFile);
+
+        buttons.forEach(btn => {
+          btn.classList.toggle("active", btn.dataset.file === name);
+        });
+
+        fileView.classList.remove("switching");
+      }, 80);
+    }
+
+    function closeFile() {
+      fileView.innerHTML = `<div class="empty">select a file</div>`;
+      buttons.forEach(btn => btn.classList.remove("active"));
+    }
+
+    buttons.forEach(btn => {
+      btn.addEventListener("click", () => openFile(btn.dataset.file));
+      btn.addEventListener("pointermove", event => {
+        const rect = btn.getBoundingClientRect();
+        btn.style.setProperty("--x", `${event.clientX - rect.left}px`);
+        btn.style.setProperty("--y", `${event.clientY - rect.top}px`);
+      });
+    });
+
+    document.getElementById("date").textContent = new Date().toLocaleDateString("ru-RU");
+    openFile("about.txt");
+  </script>
+</body>
+</html>
