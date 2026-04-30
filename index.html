@@ -537,67 +537,57 @@
 
   <script>
     const files = {
-      "about.txt": [
-        "ll1ance",
-        "",
-        "bio: not configured",
-        "langs: python / javascript /  c++",
-        "status: online sometimes",
-        "notes: dddddd"
-      ].join("
-"),
+      "about.txt": `ll1ance
 
-      "setup.conf": [
-        "os=Fedora Linux 43",
-        "de=KDE Plasma",
-        "wm=KWin (X11)",
-        "shell=bash",
-        "terminal=konsole",
-        "font=JetBrains Mono / monospace"
-      ].join("\n"),
+bio: not configured
+langs: python / javascript / c++(a bit)
+status: online sometimes
+notes: nothing public`,
 
-      "links.md": [
-        "# links",
-        "",
-        "telegram: @your_username",
-        "github: github.com/your_username"
-      ].join("\n")
+      "setup.conf": `os=Fedora Linux 43
+de=KDE Plasma
+wm=KWin (X11)
+shell=bash
+terminal=konsole
+font=JetBrains Mono / monospace`,
+
+      "links.md": `# links
+
+telegram: @your_username
+github: github.com/your_username`
     };
 
     const buttons = document.querySelectorAll(".file");
     const fileView = document.getElementById("fileView");
+    const dateEl = document.getElementById("date");
 
     function escapeHtml(text) {
-      return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/\"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
     }
 
     function openFile(name) {
-      fileView.classList.add("switching");
+      const text = files[name] || "file is empty";
 
-      window.setTimeout(() => {
-        fileView.innerHTML = `
-          <div class="file-content">
-            <div class="file-head">
-              <span>${escapeHtml(name)}</span>
-              <button class="close" id="closeBtn" aria-label="Закрыть файл">×</button>
-            </div>
-            <pre id="fileText">${escapeHtml(files[name])}</pre>
+      fileView.innerHTML = `
+        <div class="file-content">
+          <div class="file-head">
+            <span>${escapeHtml(name)}</span>
+            <button class="close" id="closeBtn" aria-label="Закрыть файл">×</button>
           </div>
-        `;
+          <pre id="fileText">${escapeHtml(text)}</pre>
+        </div>
+      `;
 
-        document.getElementById("closeBtn").addEventListener("click", closeFile);
+      document.getElementById("closeBtn").addEventListener("click", closeFile);
 
-        buttons.forEach(btn => {
-          btn.classList.toggle("active", btn.dataset.file === name);
-        });
-
-        fileView.classList.remove("switching");
-      }, 80);
+      buttons.forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.file === name);
+      });
     }
 
     function closeFile() {
@@ -614,7 +604,10 @@
       });
     });
 
-    document.getElementById("date").textContent = new Date().toLocaleDateString("ru-RU");
+    if (dateEl) {
+      dateEl.textContent = new Date().toLocaleDateString("ru-RU");
+    }
+
     openFile("about.txt");
   </script>
 </body>
