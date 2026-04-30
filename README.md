@@ -11,5 +11,5 @@ Personal portfolio/about page built with React, TypeScript and Vite.
 ## Features
 - About me section
 - Skills(netu)
-- Projects(nihuya)
+- Projects(nema)
 - Contact links
